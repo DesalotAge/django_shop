@@ -2,10 +2,25 @@ from django.db import models
 from django.contrib.auth import get_user_model
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes.fields import GenericForeignKey
-from django.db.models.base import Model
-
+from django.urls import reverse
 
 User = get_user_model()
+
+
+def get_models_for_count(*model_names):
+    return [models.Count(model_name) for model_name in model_names]
+
+
+def get_product_url(obj, urlpattern_name):
+    return reverse(urlpattern_name, kwargs={'ct_model': obj.__class__._meta.model_name, 'slug': obj.slug})
+
+
+class MinResolutionErrorException(Exception):
+    pass
+
+
+class MaxResolutionErrorException(Exception):
+    pass
 
 
 class LatestProductsManager:
@@ -33,13 +48,37 @@ class LatestProducts:
     objects =  LatestProductsManager()
 
 
+class CategoryManager(models.Manager):
+
+    CATEGORY_NAME_COUNT_NAME = {
+        'Ноутбуки': 'notebook__count',
+        'Смартфоны': 'smartphone__count'
+    }
+    
+    def get_queryset(self):
+        return super().get_queryset()
+
+    def get_categories_for_left_sidebar(self):
+        models = get_models_for_count('notebook', 'smartphone')
+        qs = list(self.get_queryset().annotate(*models))
+        data = [
+            dict(name=c.name, url=c.get_absolute_url(), count=getattr(c, self.CATEGORY_NAME_COUNT_NAME[c.name])) 
+            for c in qs
+        ]
+        return data
+
+
 class Category(models.Model):
 
     name = models.CharField(max_length=255, verbose_name='Имя категории')
     slug = models.SlugField(unique=True)
+    objects = CategoryManager()
 
     def __str__(self) -> str:
         return self.name
+
+    def get_absolute_url(self):
+        return reverse("category_detail", kwargs={"slug": self.slug})
 
 
 class Product(models.Model):
@@ -65,13 +104,17 @@ class Smartphone(Product):
     resolution = models.CharField(max_length=255, verbose_name='Разрежение экрана')
     accum_volume = models.CharField(max_length=255, verbose_name='Размер аккумулятора')
     ram = models.CharField(max_length=255, verbose_name='Оперативная память')
-    sd = models.BooleanField(default=True)
-    sd_volume_max = models.CharField(max_length=255, verbose_name='Максимальный объем встраиваемой памяти')
+    sd = models.BooleanField(default=True, verbose_name='Наличие sd-карты')
+    sd_volume_max = models.CharField(max_length=255, null=True, blank=True, verbose_name='Максимальный объем встраиваемой памяти')
     main_cam_mp = models.CharField(max_length=255, verbose_name='Главная камера')
     frontal_cam_mp = models.CharField(max_length=255, verbose_name='Фронтальная камера')
 
     def __str__(self) -> str:
         return f'{self.category.name} : {self.title}'
+
+    def get_absolute_url(self):
+        return get_product_url(self, 'product_detail')
+    
 
 class Notebook(Product):
 
@@ -85,6 +128,10 @@ class Notebook(Product):
     def __str__(self) -> str:
         return f'{self.category.name} : {self.title}'
 
+    def get_absolute_url(self):
+        return get_product_url(self, 'product_detail')
+        
+
 class CartProduct(models.Model):
 
     user = models.ForeignKey('Customer', verbose_name='Покупатель', on_delete=models.CASCADE)
@@ -93,10 +140,10 @@ class CartProduct(models.Model):
     object_id = models.PositiveIntegerField()
     content_object = GenericForeignKey('content_type', 'object_id')
     qty = models.PositiveIntegerField(default=1)
-    final_price = models.DecimalField(max_digits=9, decimal_places=2, verbose_name='Общая цена')
+    final_price = models.DecimalField(max_digits=9, decimal_places=2, default=0, verbose_name='Общая цена')
 
     def __str__(self) -> str:
-        return f"Продукт: {self.product.title} (для корзины)"
+        return f"Продукт: {self.content_object.title} (для корзины)"
 
     
 class Cart(models.Model):
@@ -104,7 +151,9 @@ class Cart(models.Model):
     owner = models.ForeignKey('Customer', verbose_name='Владелец', on_delete=models.CASCADE)
     products = models.ManyToManyField(CartProduct, blank=True, related_name='related_cart')
     total_products = models.PositiveIntegerField(default=0)
-    final_price = models.DecimalField(max_digits=9, decimal_places=2, verbose_name='Общая цена')
+    final_price = models.DecimalField(max_digits=9, default=0, decimal_places=2, verbose_name='Общая цена')
+    in_order = models.BooleanField(default=False)
+    for_anonymous_user = models.BooleanField(default=False)
 
     def __str__(self) -> str:
         return str(self.id)

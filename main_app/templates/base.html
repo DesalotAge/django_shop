@@ -34,11 +34,13 @@
                         </li>
                     </ul>
                     <form class="d-flex">
-                        <button class="btn btn-outline-light" type="submit">
+                        
+                        <a class="btn btn-outline-light" type="submit" href="{% url 'cart' %}">
                             <i class="bi-cart-fill me-1"></i>
                             Cart
-                            <span class="badge bg-light ms-1 rounded-pill" style='color:black;'>0</span>
-                        </button>
+                            <span class="badge bg-light ms-1 rounded-pill" style='color:black;'>{{ cart.products.count }}</span>
+                        </a>
+                        
                     </form>
                 </div>
             </div>

@@ -2,6 +2,45 @@
 
 
 {% block content %}
-
-    {{category}}
+    <div class='container'>
+        <div class='row'>
+            <div class='col-12 mt-5'>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item"><a href="{% url 'base' %}">Главная</a></li>
+                        <li class="breadcrumb-item active" aria-current='page'>{{category}}</li>
+                    </ol>
+                </nav>
+            </div>
+        </div>
+    </div>
+    <section class="py-5">
+            <div class="container px-4 px-lg-5">
+                <div class="row gx-4 gx-lg-5 row-cols-2 row-cols-md-3 row-cols-xl-4 justify-content-center">
+                    
+                    
+                    {% for product in category_products %}
+                        <div class="col mb-5">
+                            <div class="card h-100">
+                                <!-- Product image-->
+                                <img class="card-img-top" src="{{product.image.url}}" alt="...">
+                                <!-- Product details-->
+                                <div class="card-body p-4">
+                                    <div class="text-center">
+                                        <!-- Product name-->
+                                        <h5 class="fw-bolder">{{ product.title }}</h5>
+                                        <!-- Product price-->
+                                        {{product.price}} руб. 
+                                    </div>
+                                </div>
+                                <!-- Product actions-->
+                                <div class="card-footer p-4 pt-0 border-top-0 bg-transparent">
+                                    <div class="text-center"><a class="btn btn-outline-dark mt-auto" href="{{ product.get_absolute_url}}">View options</a></div>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </section>
 {% endblock content %}

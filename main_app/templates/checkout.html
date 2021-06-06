@@ -1,25 +1,12 @@
 {% extends 'base.html' %}
-
+{% load crispy_forms_tags %}
 
 {% block content %}
-
     <h3 class='text-center mt-5 mb-5'> 
-        Ваша корзина {% if not cart.products.count %} пуста {% endif %}
+        Оформление заказа
     </h3>
     <div class='container'>
         <div class='row'>
-            {% if messages %}
-                {% for message in messages %}
-                <div class="alert alert-success alert-dismissible fade show" role="alert">
-                    <strong>{{ message }}</strong>
-                </div>
-
-                {% endfor %}
-
-
-            {% endif %}
-        
-            {% if cart.products.count %}
             <table class="table col-12">
                 <thead>
                     <tr>
@@ -28,7 +15,6 @@
                         <th scope="col">Цена</th>
                         <th scope="col">Количество</th>
                         <th scope="col">Общая цена</th>
-                        <th scope="col"></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -39,30 +25,36 @@
                             <td class='w-25'><img src="{{ product.content_object.image.url }}" class='img-fluid'></td>
                             <td>{{ product.content_object.price }} руб.</td>
                             <td>
-                                <form action='{% url 'change_qty' ct_model=product.content_object.get_model_name slug=product.content_object.slug %}' method='post'>
-                                    {% csrf_token %}
-                                    <input type='number' name='qty' class='form-control' min='1' value='{{product.qty}}'>
-                                    <button type='submit' class='btn btn-primary mt-3'> Изменить количество </button>
-                                </form>
+                                {{ product.qty }}
                             </td>
                             <td>{{ product.final_price }} руб.</td>
-                            <td>
-                                <a class='btn btn-danger' href="{% url 'delete_from_cart' ct_model=product.content_object.get_model_name slug=product.content_object.slug %}">
-                                    Удалить из корзины
-                                 </a>
-                            </td>
+                
                         </tr>
                     {% endfor %}    
                     <tr>
                         <td colspan='3'> </td>
                         <td><strong> Итого: </strong> </td>
                         <td> <strong>{{cart.final_price}} руб. </strong> </td>
-                        <td> <a href="{% url 'checkout' %}" class='btn btn-warning'> Перейти к оформлению </a></td>
                     </tr>
                 </tbody>
             </table>
-
-            {% endif %}
+        </div>
+    </div>
+    <hr>
+    <h3 class='text-center mt-5'> 
+        Форма заказа
+    </h3>
+    <div class='container'>
+        <div class='row'>
+            <div class='col-md-3'></div>
+            <div class='col-md-6 col-12 mb-5'>
+                <form action='{% url 'make_order' %}' method='post' >
+                    {% csrf_token %}
+                    {{ form|crispy }}  
+                    <input type='submit' style='width: 100%;' class='btn btn-success mt-4 btn-block' value='Заказать'>
+                </form>
+            </div>
+            <div class='col-md-3'> </div>
         </div>
     </div>
 {% endblock content %}
